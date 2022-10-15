@@ -2,13 +2,13 @@ import { Card, Pagination, Row, Col } from 'antd';
 import { Avatar, List, Space } from 'antd';
 import React, { Component } from 'react';
 import { request } from 'umi';
-import ArticalCard from './article_card';
+import ArticleCard from './article_card';
 
 interface Article {
   id: number,
   description: string,
   title: string,
-  cover: string
+  cover: string,
 }
 
 interface ArticleListState {
@@ -67,7 +67,7 @@ export default class ArticleList extends Component<any, ArticleListState> {
             }
             renderItem={({ cover, description, id, title }) => (
               <List.Item key={id}>
-                <ArticalCard description={description} cover={cover} title={title} id={id} />
+                <ArticleCard description={description} cover={cover} title={title} id={id} />
               </List.Item>
             )}
           />

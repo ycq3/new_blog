@@ -16,7 +16,7 @@ function IndexPage() {
 
 
 IndexPage.menu = {
-  name: '首页',
+  name: '博客',
 }
 
 IndexPage.layout = {

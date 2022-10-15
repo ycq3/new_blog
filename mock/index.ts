@@ -10,7 +10,7 @@ export default {
       href: 'https://ant.design',
       title: `ant design part ${i + (page - 1) * (page_size??15)}`,
       avatar: 'https://joeschmoe.io/api/v1/random',
-      cover: 'https://gw.alipayobjects.com/zos/rmsportal/mqaQswcyDLcXyDKnZfES.png',
+      cover: i%3 ? 'https://gw.alipayobjects.com/zos/rmsportal/mqaQswcyDLcXyDKnZfES.png' : "",
       description:
         'Ant Design, a design language for background applications, is refined by Ant UED Team.Ant Design, a design language for background applications, is refined by Ant UED Team.Ant Design, a design language for background applications, is refined by Ant UED Team.Ant Design, a design language for background applications, is refined by Ant UED Team.Ant Design, a design language for background applications, is refined by Ant UED Team.',
       content:
