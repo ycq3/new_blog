@@ -29,6 +29,7 @@
   "devDependencies": {
     "@types/react": "^18.0.17",
     "@types/react-dom": "^17.0.0",
+    "@types/wicg-file-system-access": "^2020.9.5",
     "@umijs/preset-react": "1.x",
     "@umijs/test": "^3.5.32",
     "lint-staged": "^10.0.7",
