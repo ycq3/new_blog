@@ -10,4 +10,7 @@ export default defineConfig({
   mock: {
     exclude: ['/api/songs/play_list/', '/api/song/play_list/add'],
   },
+  history: {
+    type: 'hash',
+  },
 });

@@ -29,4 +29,7 @@ export const layout = ({
   };
 };
 
-export const request: RequestConfig = {};
+export const request: RequestConfig = {
+  prefix: 'https://api.dydq.xyz',
+  timeout: 30000,
+};

@@ -51,11 +51,14 @@ export default class MusicPage extends Component<any, MusicState> {
     qualitySelect: 1,
     emptyCount: 0,
     verify: false,
-    pin: 427485,
+    pin: 0,
     isNewListModalOpen: false,
   };
 
   componentDidMount() {
+    if (process.env.NODE_ENV === 'development') {
+      this.setState({ pin: 427485, playListId: 2603575627 });
+    }
     this.loadPlayList(this.state.playListId);
   }
 
