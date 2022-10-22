@@ -28,5 +28,21 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy React to GitHub Pages
-        uses: bitovi/github-actions-react-to-ghp@v1.0.0
+     - name: Checkout if required
+       uses: actions/checkout@v3
+     - name: 'Build'
+       shell: bash
+       run: |
+        echo "::group::Build"
+        yarn
+        yarn build
+        echo "::endgroup::"
+     - name: 'upload'
+       uses: actions/upload-pages-artifact@v1.0.4
+       with: 
+         path: dist
+     - id: deploy
+       name: Deploy to GitHub Pages
+       uses: actions/deploy-pages@v1
+       with:
+         token: ${{ github.token }}
