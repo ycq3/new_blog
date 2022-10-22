@@ -1,9 +1,10 @@
 import { HomeOutlined } from '@ant-design/icons';
-import { Button, Input, Table, Modal, Radio, Checkbox } from 'antd';
+import { Button, Input, Table, Modal, Radio, Checkbox, Image } from 'antd';
 import type { RadioChangeEvent } from 'antd';
 import React, { Component } from 'react';
 import { request } from '@@/plugin-request/request';
-import { FileSystemGetFileOptions } from 'wicg-file-system-access';
+
+// import { FileSystemGetFileOptions } from 'wicg-file-system-access';
 
 interface Song {
   id: number;
@@ -13,7 +14,7 @@ interface Song {
   quality: number;
   song_id: number;
   qualityText: string;
-  status: number;
+  status: string;
 }
 
 interface MusicState {
@@ -26,6 +27,9 @@ interface MusicState {
   loading: boolean;
   qualitySelect: number;
   emptyCount: number;
+  pin: number;
+  verify: boolean;
+  isNewListModalOpen: boolean;
 }
 
 export default class MusicPage extends Component<any, MusicState> {
@@ -41,18 +45,37 @@ export default class MusicPage extends Component<any, MusicState> {
     currentPage: 1,
     pageSize: 15,
     total: 0,
-    playListId: 7549065045,
-    isModalOpen: true,
+    playListId: 0,
+    isModalOpen: false,
     loading: true,
     qualitySelect: 1,
     emptyCount: 0,
+    verify: false,
+    pin: 427485,
+    isNewListModalOpen: false,
   };
 
   componentDidMount() {
     this.loadPlayList(this.state.playListId);
   }
 
+  add(playListId: number) {
+    const { pin } = this.state;
+    request('/api/song/play_list/add', {
+      params: {
+        playlist_id: playListId,
+        key: pin,
+      },
+    }).then((resp) => {
+      this.setState({ isNewListModalOpen: false });
+    });
+  }
+
   loadPlayList(playListId: number) {
+    if (playListId <= 0) {
+      return;
+    }
+    this.setState({ loading: true });
     const { currentPage, pageSize } = this.state;
     request('/api/songs/play_list/' + playListId, {
       params: {
@@ -60,7 +83,6 @@ export default class MusicPage extends Component<any, MusicState> {
         pageSize: pageSize,
       },
     }).then((resp) => {
-      this.setState({ loading: true });
       const { data, total } = resp;
       let emptyCount = 0;
       data.map((i: Song) => {
@@ -77,17 +99,21 @@ export default class MusicPage extends Component<any, MusicState> {
         total: total,
         loading: false,
         emptyCount: emptyCount,
+        isNewListModalOpen: data.length == 0,
       });
     });
   }
 
   async download() {
     if (this.dirHandle == null) {
+      console.log('no permission');
       this.dirHandle = await window.showDirectoryPicker({
         startIn: 'music', //default folder
         writable: true, //ask for write permission
       });
+      await this.download();
     }
+
     const { data } = this.state;
     // this.dirHandle
 
@@ -102,17 +128,23 @@ export default class MusicPage extends Component<any, MusicState> {
     const urlToGet = 'api/song/' + s.id + '/' + s.quality;
     const data = await fetch(urlToGet);
     if (data.status != 200) {
-      s.status = -1;
+      s.status = '服务器错误:' + data.statusText;
       return;
     }
 
-    const filename: string | null =
-      data.headers.get('Content-Disposition')?.split('filename=')[1] ?? null;
-    if (filename == null) {
+    const ext: string | null = data.headers.get('FileExt');
+    if (ext == null) {
       return;
     }
 
     // return data.blob();
+
+    const filename = (s.name + '-' + s.artist + ext).replaceAll(
+      /[\\\\/:*?\"<>|]/g,
+      '',
+    );
+    // console.log(filename);
+    s.status = '开始下载' + filename;
 
     const fileHandle = await this.dirHandle?.getFileHandle(filename, {
       create: true,
@@ -123,10 +155,13 @@ export default class MusicPage extends Component<any, MusicState> {
       return;
     }
 
+    console.log(fileHandle);
+
     if (await this.verifyPermission(fileHandle, true)) {
       const writable = await fileHandle.createWritable();
       await writable.write(await data.blob());
       await writable.close();
+      s.status = '下载完成';
     }
   }
 
@@ -168,6 +203,10 @@ export default class MusicPage extends Component<any, MusicState> {
         title: '音质',
         dataIndex: 'qualityText',
       },
+      {
+        title: '状态',
+        dataIndex: 'status',
+      },
     ];
 
     // async function DownloadFiles(paramToFiles: any) {
@@ -197,16 +236,61 @@ export default class MusicPage extends Component<any, MusicState> {
     //   //move above
     // }
 
-    const { isModalOpen, loading, qualitySelect, emptyCount } = this.state;
+    const {
+      isModalOpen,
+      loading,
+      qualitySelect,
+      emptyCount,
+      playListId,
+      pin,
+      verify,
+      isNewListModalOpen,
+    } = this.state;
 
     return (
       <div>
-        <h3>由于版权原因，不对外开放</h3>
-        <Input.Group compact>
-          <Input placeholder="输入歌单ID" style={{ width: '300px' }} />
-          <Button type="primary">导入</Button>
-        </Input.Group>
-
+        <h3>由于版权原因，不对外开放,交流请扫码关注公众号</h3>
+        <div style={{ display: 'flex' }}>
+          <Input.Group compact style={{ width: '400px' }}>
+            <Input
+              placeholder="输入暗号"
+              style={{ width: '300px' }}
+              status={'error'}
+              onChange={(e) => this.setState({ pin: Number(e.target.value) })}
+              disabled={verify}
+            />
+            <Button
+              type="primary"
+              onClick={() => {
+                if (pin == 427485) {
+                  this.setState({ verify: true });
+                }
+              }}
+              disabled={verify}
+            >
+              验证
+            </Button>
+          </Input.Group>
+          <Input.Group compact style={{ width: '400px' }}>
+            <Input
+              placeholder="输入歌单ID"
+              style={{ width: '300px' }}
+              disabled={!verify}
+              onChange={(e) =>
+                this.setState({ playListId: Number(e.target.value) })
+              }
+            />
+            <Button
+              type="primary"
+              onClick={() => {
+                this.loadPlayList(playListId);
+              }}
+              disabled={!verify}
+            >
+              导入
+            </Button>
+          </Input.Group>
+        </div>
         <Input.Group>
           {/*<Input placeholder='保存位置' />*/}
           <Radio.Group
@@ -216,12 +300,17 @@ export default class MusicPage extends Component<any, MusicState> {
             }
           >
             <Radio value={1}>优先下载最高品质</Radio>
-            <Radio value={2}>优先下载最低品质</Radio>
-            <Radio value={3}>全部下载</Radio>
+            <Radio value={2} disabled={true}>
+              优先下载最低品质
+            </Radio>
+            <Radio value={3} disabled={true}>
+              全部下载
+            </Radio>
           </Radio.Group>
-          <Checkbox>同时下载歌词</Checkbox>
-          <Checkbox>同时下载封面</Checkbox>
+          <Checkbox disabled={true}>同时下载歌词</Checkbox>
+          <Checkbox disabled={true}>同时下载封面</Checkbox>
           <Button
+            disabled={!verify}
             type="primary"
             onClick={() => this.setState({ isModalOpen: true })}
           >
@@ -229,12 +318,18 @@ export default class MusicPage extends Component<any, MusicState> {
           </Button>
         </Input.Group>
 
+        <Image src={require('@/image/wechat.png')} height={'100px'} />
+        <Image src={require('@/image/donate.png')} height={'100px'} />
+
         <Modal
           title="下载确认"
           open={isModalOpen}
           onCancel={() => this.setState({ isModalOpen: false })}
           confirmLoading={loading}
-          onOk={() => this.download()}
+          onOk={() => {
+            this.setState({ loading: true });
+            this.download().then(() => this.setState({ loading: false }));
+          }}
         >
           <p>当前一共有 {dataSource.length} 首歌曲，确定全部下载吗？</p>
           <p>下载不支持断点续传，所以请尽量不要操作浏览器</p>
@@ -245,6 +340,18 @@ export default class MusicPage extends Component<any, MusicState> {
               有 {emptyCount} 首歌曲没有资源!请确认任务是否执行完成
             </p>
           )}
+        </Modal>
+        <Modal
+          title="创建导入任务"
+          open={isNewListModalOpen}
+          onCancel={() => this.setState({ isNewListModalOpen: false })}
+          confirmLoading={loading}
+          onOk={() => this.add(playListId)}
+        >
+          <p>歌单不存在需要导入，处理过程需要1-2小时，请勿重复提交</p>
+          <p>
+            服务器流量成本不菲，如果这个工具帮助到了你，你可以捐助我们，一遍我们持续运行
+          </p>
         </Modal>
         <Table dataSource={dataSource} columns={columns} rowKey="id" />
       </div>
