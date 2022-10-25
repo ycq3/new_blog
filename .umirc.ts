@@ -13,4 +13,5 @@ export default defineConfig({
   history: {
     type: 'hash',
   },
+  hash: true,
 });
