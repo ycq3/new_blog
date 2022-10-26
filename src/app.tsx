@@ -29,7 +29,13 @@ export const layout = ({
   };
 };
 
-export const request: RequestConfig = {
-  prefix: 'https://api.dydq.xyz',
-  timeout: 30000,
+export const request = () => {
+  if (process.env.NODE_ENV !== 'development') {
+    const request: RequestConfig = {
+      prefix: 'https://api.dydq.xyz',
+      timeout: 30000,
+    };
+    return request;
+  }
+  return {};
 };
