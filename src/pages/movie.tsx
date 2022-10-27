@@ -77,8 +77,9 @@ export default class MoviePage extends Component<any, MovieState> {
   play(id: number) {
     const { data } = this.state;
 
-    let currentPlay = data.at(id);
-    if (currentPlay != null) {
+    let currentPlay = data.at(id) ?? data[id] ?? null;
+
+    if (currentPlay != undefined) {
       this.setState({
         currentPlay: currentPlay,
         isModalOpen: true,
