@@ -38,7 +38,7 @@ interface MovieState {
   pin: number;
   verify: boolean;
   isNewListModalOpen: boolean;
-  currentPlay: Movie | null;
+  currentPlay: Movie;
   videoUrl: string;
 }
 
@@ -63,7 +63,7 @@ export default class MoviePage extends Component<any, MovieState> {
     verify: false,
     pin: 0,
     isNewListModalOpen: false,
-    currentPlay: null,
+    currentPlay: { name: '' } as Movie,
     videoUrl: '',
   };
 
@@ -75,7 +75,6 @@ export default class MoviePage extends Component<any, MovieState> {
   }
 
   play(id: number) {
-    console.log(id);
     const { data } = this.state;
 
     let currentPlay = data.at(id);
@@ -101,8 +100,9 @@ export default class MoviePage extends Component<any, MovieState> {
     });
   }
 
-  loadMovieList(name: string) {
-    const { data } = this.state;
+  loadMovieList(searchName: string) {
+    let { data, name } = this.state;
+
     this.setState({ loading: true });
     const { currentPage, pageSize } = this.state;
     request('/api/movie/search/', {
@@ -114,8 +114,8 @@ export default class MoviePage extends Component<any, MovieState> {
         item.index = i;
         return item;
       });
-      this.setState({ data: [...data, ...respData] });
-      this.setState({ loading: false });
+
+      this.setState({ data: respData, loading: false });
     });
     // request('/api/songs/play_list/' + name, {
     //   params: {
@@ -219,9 +219,9 @@ export default class MoviePage extends Component<any, MovieState> {
     return (await fileHandle.requestPermission(options)) === 'granted';
   }
 
-  renderButton(currentPlay: Movie | null) {
+  renderButton(currentPlay: Movie | undefined) {
     // const { currentPlay } = this.state;
-    if (currentPlay == null) {
+    if (currentPlay == undefined) {
       return <></>;
     }
 
