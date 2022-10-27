@@ -63,7 +63,7 @@ export default class MoviePage extends Component<any, MovieState> {
     verify: false,
     pin: 0,
     isNewListModalOpen: false,
-    currentPlay: { name: '' } as Movie,
+    currentPlay: { name: '', play_url: [] as Array<VideoUrl> } as Movie,
     videoUrl: '',
   };
 
