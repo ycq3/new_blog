@@ -34,7 +34,7 @@ interface MusicState {
 
 export default class MusicPage extends Component<any, MusicState> {
   public static menu = {
-    name: '音乐🎵', // 兼容此写法
+    name: '歌单下载', // 兼容此写法
     icon: <HomeOutlined />,
   };
 

@@ -1,6 +1,5 @@
 import { HomeOutlined } from '@ant-design/icons';
-import { Button, Input, Table, Modal, Radio, Checkbox, Image } from 'antd';
-import type { RadioChangeEvent } from 'antd';
+import { Button, Input, Table, Modal, Radio, message, Image } from 'antd';
 import React, { Component } from 'react';
 import { request } from '@@/plugin-request/request';
 import JoLPlayer, { videoType } from 'jol-player';
@@ -283,7 +282,11 @@ export default class MoviePage extends Component<any, MovieState> {
         title: '播放',
         dataIndex: 'index',
         render: (id: number) => {
-          return <Button onClick={() => this.play(id)}>播放</Button>;
+          return (
+            <Button disabled={!verify} onClick={() => this.play(id)}>
+              播放
+            </Button>
+          );
         },
       },
     ];
@@ -315,16 +318,8 @@ export default class MoviePage extends Component<any, MovieState> {
     //   //move above
     // }
 
-    const {
-      isModalOpen,
-      videoUrl,
-      // player,
-      emptyCount,
-      name,
-      pin,
-      verify,
-      currentPlay,
-    } = this.state;
+    const { isModalOpen, videoUrl, loading, name, pin, verify, currentPlay } =
+      this.state;
 
     let videoType: videoType = videoUrl.endsWith('m3u8') ? 'hls' : 'h264';
 
@@ -345,6 +340,8 @@ export default class MoviePage extends Component<any, MovieState> {
               onClick={() => {
                 if (pin == 427485) {
                   this.setState({ verify: true });
+                } else {
+                  message.error('暗号错误');
                 }
               }}
               disabled={verify}
@@ -437,7 +434,9 @@ export default class MoviePage extends Component<any, MovieState> {
           columns={columns}
           key={'index'}
           pagination={false}
+          loading={loading}
         />
+        <Button>加载更多</Button>
       </div>
     );
   }
