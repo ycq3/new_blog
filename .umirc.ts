@@ -9,7 +9,7 @@ export default defineConfig({
   },
   mock: {
     exclude: [
-      '/api/songs/play_list/',
+      '/api/songs/play_list',
       '/api/song/play_list/add',
       '/api/movie/search',
     ],

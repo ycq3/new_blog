@@ -128,7 +128,8 @@ export default class MusicPage extends Component<any, MusicState> {
   }
 
   async getBlob(s: Song) {
-    const urlToGet = 'api/song/' + s.id + '/' + s.quality;
+    const urlToGet =
+      'https://api.dydq.xyz' + '/api/song/' + s.id + '/' + s.quality;
     const data = await fetch(urlToGet);
     if (data.status != 200) {
       s.status = '服务器错误:' + data.statusText;

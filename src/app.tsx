@@ -9,6 +9,8 @@ import {
 } from '@ant-design/pro-layout';
 import { RequestConfig } from 'umi';
 
+const API_SERVER = 'https://api.dydq.xyz';
+
 export const layout = ({
   initialState,
 }: {
@@ -32,7 +34,7 @@ export const layout = ({
 export const request = () => {
   if (process.env.NODE_ENV !== 'development') {
     const request: RequestConfig = {
-      prefix: 'https://api.dydq.xyz',
+      prefix: API_SERVER,
       timeout: 30000,
     };
     return request;
