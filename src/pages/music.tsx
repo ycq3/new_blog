@@ -1,8 +1,19 @@
 import { HomeOutlined } from '@ant-design/icons';
-import { Button, Input, Table, Modal, Radio, Checkbox, Image } from 'antd';
+import {
+  Button,
+  Input,
+  Table,
+  Modal,
+  Radio,
+  Checkbox,
+  Image,
+  message,
+  Popconfirm,
+} from 'antd';
 import type { RadioChangeEvent } from 'antd';
 import React, { Component } from 'react';
 import { request } from '@@/plugin-request/request';
+import ex from 'umi/dist';
 
 // import { FileSystemGetFileOptions } from 'wicg-file-system-access';
 
@@ -107,37 +118,52 @@ export default class MusicPage extends Component<any, MusicState> {
     });
   }
 
-  async download() {
+  async download(id: string | number | null) {
+    // debugger
     if (this.dirHandle == null) {
       console.log('no permission');
       this.dirHandle = await window.showDirectoryPicker({
         startIn: 'music', //default folder
         writable: true, //ask for write permission
       });
-      await this.download();
+      await this.download(id);
+      return;
     }
 
     const { data } = this.state;
     // this.dirHandle
 
-    for (const i of data) {
-      if (i.quality < 5) {
-        await this.getBlob(i);
+    if (id != null && id > 0) {
+      let i = data.find((n) => n.song_id == id);
+      i != undefined && (await this.getBlob(i));
+    } else {
+      for (const i of data) {
+        if (i.quality < 5) {
+          await this.getBlob(i);
+        }
       }
     }
   }
 
   async getBlob(s: Song) {
     const urlToGet =
-      'https://api.dydq.xyz' + '/api/song/' + s.id + '/' + s.quality;
+      'https://api.dydq.xyz' +
+      '/api/song/' +
+      s.id +
+      '/' +
+      s.quality +
+      '/download.cache';
     const data = await fetch(urlToGet);
+    console.log(urlToGet);
     if (data.status != 200) {
+      message.warning('服务器错误:' + data.statusText);
       s.status = '服务器错误:' + data.statusText;
       return;
     }
 
     const ext: string | null = data.headers.get('FileExt');
-    if (ext == null) {
+    console.log(s.id, '扩展名', ext);
+    if (ext == null || ext.length == 0) {
       return;
     }
 
@@ -147,9 +173,9 @@ export default class MusicPage extends Component<any, MusicState> {
       /[\\\\/:*?\"<>|]/g,
       '',
     );
-    // console.log(filename);
+    console.log(filename);
     s.status = '开始下载' + filename;
-
+    message.info('开始下载' + filename);
     const fileHandle = await this.dirHandle?.getFileHandle(filename, {
       create: true,
     });
@@ -210,6 +236,18 @@ export default class MusicPage extends Component<any, MusicState> {
       {
         title: '状态',
         dataIndex: 'status',
+      },
+      {
+        title: '下载',
+        render: (_: any, record: { song_id: number }) =>
+          dataSource.length >= 1 ? (
+            <Popconfirm
+              title="确认要下载吗"
+              onConfirm={() => this.download(record.song_id)}
+            >
+              <Button>下载</Button>
+            </Popconfirm>
+          ) : null,
       },
     ];
 
