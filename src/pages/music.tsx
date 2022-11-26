@@ -118,7 +118,7 @@ export default class MusicPage extends Component<any, MusicState> {
     });
   }
 
-  async download(id: string | number | null) {
+  async download(id: string | number | null = null) {
     // debugger
     if (this.dirHandle == null) {
       console.log('no permission');

@@ -1,5 +1,14 @@
 import { HomeOutlined } from '@ant-design/icons';
-import { Button, Input, Table, Modal, Radio, message, Image } from 'antd';
+import {
+  Button,
+  Input,
+  Table,
+  Modal,
+  Form,
+  message,
+  Image,
+  Tooltip,
+} from 'antd';
 import React, { Component } from 'react';
 import { request } from '@@/plugin-request/request';
 import JoLPlayer, { videoType } from 'jol-player';
@@ -31,6 +40,7 @@ interface MovieState {
   total: number;
   name: string;
   isModalOpen: boolean;
+  isMailModalOpen: boolean;
   loading: boolean;
   qualitySelect: number;
   emptyCount: number;
@@ -39,6 +49,8 @@ interface MovieState {
   isNewListModalOpen: boolean;
   currentPlay: Movie;
   videoUrl: string;
+  apiIndex: number;
+  emailIsValid: boolean;
 }
 
 export default class MoviePage extends Component<any, MovieState> {
@@ -64,13 +76,16 @@ export default class MoviePage extends Component<any, MovieState> {
     isNewListModalOpen: false,
     currentPlay: { name: '', play_url: [] as Array<VideoUrl> } as Movie,
     videoUrl: '',
+    isMailModalOpen: true,
+    apiIndex: 0,
+    emailIsValid: false,
   };
 
   componentDidMount() {
     if (process.env.NODE_ENV === 'development') {
       this.setState({ pin: 427485, name: '三悦' });
     }
-    this.loadMovieList(this.state.name);
+    this.loadMovieList();
   }
 
   play(id: number) {
@@ -88,26 +103,27 @@ export default class MoviePage extends Component<any, MovieState> {
     // let player = ;
   }
 
-  add(playListId: number) {
-    const { pin } = this.state;
-    request('/api/song/play_list/add', {
-      params: {
-        playlist_id: playListId,
-        key: pin,
-      },
-    }).then((resp) => {
-      this.setState({ isNewListModalOpen: false });
-    });
+  add(email: string) {
+    // const { pin } = this.state;
+    // request('/api/movie/subscribe/add', {
+    //   params: {
+    //     // playlist_id: playListId,
+    //     // key: pin,
+    //   },
+    // }).then((resp) => {
+    //   this.setState({ isNewListModalOpen: false });
+    // });
   }
 
-  loadMovieList(searchName: string) {
-    let { data, name } = this.state;
+  loadMovieList() {
+    let { data, name, apiIndex } = this.state;
 
     this.setState({ loading: true });
     const { currentPage, pageSize } = this.state;
     request('/api/movie/search/', {
       params: {
         q: name,
+        api: apiIndex,
       },
     }).then((resp) => {
       let respData = resp.data.map((item: Movie, i: number) => {
@@ -115,7 +131,7 @@ export default class MoviePage extends Component<any, MovieState> {
         return item;
       });
 
-      this.setState({ data: respData, loading: false });
+      this.setState({ data: [...data, ...respData], loading: false });
     });
     // request('/api/songs/play_list/' + name, {
     //   params: {
@@ -142,6 +158,16 @@ export default class MoviePage extends Component<any, MovieState> {
     //     isNewListModalOpen: data.length == 0,
     //   });
     // });
+  }
+
+  loadMore() {
+    const { apiIndex } = this.state;
+    this.setState(
+      {
+        apiIndex: apiIndex + 1,
+      },
+      this.loadMovieList,
+    );
   }
 
   // async download() {
@@ -220,7 +246,7 @@ export default class MoviePage extends Component<any, MovieState> {
   }
 
   renderButton(currentPlay: Movie | undefined) {
-    // const { currentPlay } = this.state;
+    const { videoUrl } = this.state;
     if (currentPlay == undefined) {
       return <></>;
     }
@@ -228,6 +254,7 @@ export default class MoviePage extends Component<any, MovieState> {
     // @ts-ignore
     let button = currentPlay.play_url.map((item, i) => (
       <Button
+        type={videoUrl === item.url ? 'primary' : 'default'}
         key={i}
         onClick={() => {
           this.setState({ videoUrl: item.url });
@@ -318,8 +345,17 @@ export default class MoviePage extends Component<any, MovieState> {
     //   //move above
     // }
 
-    const { isModalOpen, videoUrl, loading, name, pin, verify, currentPlay } =
-      this.state;
+    const {
+      isModalOpen,
+      videoUrl,
+      loading,
+      name,
+      pin,
+      verify,
+      currentPlay,
+      isMailModalOpen,
+      emailIsValid,
+    } = this.state;
 
     let videoType: videoType = videoUrl.endsWith('m3u8') ? 'hls' : 'h264';
 
@@ -360,7 +396,7 @@ export default class MoviePage extends Component<any, MovieState> {
             <Button
               type="primary"
               onClick={() => {
-                this.loadMovieList(name);
+                this.setState({ data: [] }, this.loadMovieList);
               }}
               disabled={!verify || name.length == 0}
             >
@@ -386,13 +422,13 @@ export default class MoviePage extends Component<any, MovieState> {
         {/*  </Radio.Group>*/}
         {/*  <Checkbox disabled={true}>同时下载歌词</Checkbox>*/}
         {/*  <Checkbox disabled={true}>同时下载封面</Checkbox>*/}
-        {/*  <Button*/}
-        {/*    disabled={!verify}*/}
-        {/*    type="primary"*/}
-        {/*    onClick={() => this.setState({ isModalOpen: true })}*/}
-        {/*  >*/}
-        {/*    下载当前列表所有歌曲*/}
-        {/*  </Button>*/}
+        <Button
+          disabled={!verify}
+          type="primary"
+          onClick={() => this.setState({ isMailModalOpen: true })}
+        >
+          邮件订阅
+        </Button>
         {/*</Input.Group>*/}
 
         <Image src={require('@/image/wechat.png')} height={'100px'} />
@@ -406,6 +442,7 @@ export default class MoviePage extends Component<any, MovieState> {
           width={750 + 24 * 2}
           destroyOnClose={true}
         >
+          <div>视频采集自互联网，请勿相信视频中的广告！</div>
           <JoLPlayer
             style={{ marginTop: 30, marginBottom: 10 }}
             option={{
@@ -417,18 +454,78 @@ export default class MoviePage extends Component<any, MovieState> {
           />
           {this.renderButton(currentPlay)}
         </Modal>
-        {/*<Modal*/}
-        {/*  title='创建导入任务'*/}
-        {/*  open={isNewListModalOpen}*/}
-        {/*  onCancel={() => this.setState({ isNewListModalOpen: false })}*/}
-        {/*  confirmLoading={loading}*/}
-        {/*  onOk={() => this.add(name)}*/}
-        {/*>*/}
-        {/*  <p>歌单不存在需要导入，处理过程需要1-2小时，请勿重复提交</p>*/}
-        {/*  <p>*/}
-        {/*    服务器流量成本不菲，如果这个工具帮助到了你，你可以捐助我们，一遍我们持续运行*/}
-        {/*  </p>*/}
-        {/*</Modal>*/}
+        <Modal
+          title="邮件订阅"
+          open={isMailModalOpen}
+          onCancel={() => this.setState({ isMailModalOpen: false })}
+          confirmLoading={loading}
+          onOk={() => this.add('')}
+        >
+          <p>
+            系统将每天0:0进行全网搜索，如果有符合条件的资源，将给指定的邮箱发送一封提心邮件，以便在有资源的时候通知你
+          </p>
+          <p>
+            服务器流量成本不菲，如果这个工具帮助到了你，你可以捐助我们，一遍我们持续运行
+          </p>
+
+          <Form
+            name="basic"
+            labelCol={{ span: 8 }}
+            wrapperCol={{ span: 16 }}
+            // initialValues={{ remember: true }}
+            // onFinish={onFinish}
+            // onFinishFailed={onFinishFailed}
+            autoComplete="off"
+            onFieldsChange={(changedFields, allFields) => {
+              let mailField = changedFields.find((i) => i.name == 'email');
+              if (mailField != undefined) {
+                if (mailField.value.length > 0) {
+                  this.setState({
+                    emailIsValid: mailField.errors?.length == 0,
+                  });
+                } else {
+                  this.setState({
+                    emailIsValid: false,
+                  });
+                }
+              }
+            }}
+          >
+            <Form.Item label="邮箱" name="email" rules={[{ type: 'email' }]}>
+              <Input />
+            </Form.Item>
+
+            <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
+              <Button type="primary" disabled={!emailIsValid || !verify}>
+                查看已有订阅
+              </Button>
+            </Form.Item>
+            <p>下面内容非必填，建议在收到错误的资源时填写</p>
+            <Form.Item label="片名" name="name">
+              <Input />
+            </Form.Item>
+            <Form.Item label="导演" name="director">
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label="演员"
+              name="actor"
+              tooltip="填写一个即可，建议填写主演"
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item label="地区" name="area">
+              <Input />
+            </Form.Item>
+            <Form.Item label="语言" name="lang">
+              <Input />
+            </Form.Item>
+
+            <Form.Item label="年份" name="year">
+              <Input />
+            </Form.Item>
+          </Form>
+        </Modal>
         <Table
           dataSource={dataSource}
           columns={columns}
@@ -436,7 +533,7 @@ export default class MoviePage extends Component<any, MovieState> {
           pagination={false}
           loading={loading}
         />
-        <Button>加载更多</Button>
+        <Button onClick={() => this.loadMore()}>加载更多</Button>
       </div>
     );
   }
